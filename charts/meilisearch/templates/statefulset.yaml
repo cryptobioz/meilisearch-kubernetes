@@ -36,9 +36,11 @@ spec:
         - name: tmp
           emptyDir: {}
         {{- if .Values.persistence.enabled }}
+        {{- if .Values.persistence.existingClaim }}
         - name: {{ .Values.persistence.volume.name }}
           persistentVolumeClaim:
-            claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ include "meilisearch.fullname" . }}{{- end }}
+            claimName: {{ .Values.persistence.existingClaim }}
+        {{- end }}
         {{- else }}
         - name: {{ .Values.persistence.volume.name }}
           emptyDir: {}
@@ -114,3 +116,16 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
+{{- if .Values.persistence.enabled }}
+{{- if not .Values.persistence.existingClaim }}
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .Values.persistence.volume.name }}
+      spec:
+        accessModes: [{{ .Values.persistence.accessMode | quote }}]
+        storageClassName: {{ .Values.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+{{- end }}
+{{- end }}
